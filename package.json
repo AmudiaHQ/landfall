@@ -1,0 +1,78 @@
+{
+  "name": "@amudia/landfall",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A→B UI effects with zero dependencies. First up: swirl, which dissolves an element into a swirling energy ball that flies into another and lands with a ripple.",
+  "keywords": [
+    "animation",
+    "transition",
+    "effect",
+    "particles",
+    "canvas",
+    "waapi",
+    "swirl",
+    "fly-to",
+    "handoff",
+    "react"
+  ],
+  "homepage": "https://amudia.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AmudiaHQ/landfall.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AmudiaHQ/landfall/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "Apache-2.0",
+  "author": "Amudia (https://amudia.com)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "bun scripts/build.ts",
+    "build:demo": "bun build ./demo/index.html --outdir=demo-dist --minify",
+    "demo": "bun scripts/demo.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "check": "prettier --check . && eslint . && tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=17"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/bun": "^1.4.3",
+    "@types/react": "^19.3.0",
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.0"
+  }
+}

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Landfall · swirl demo</title>
+    <meta
+      name="description"
+      content="Landfall swirl: an element dissolves into a swirling ball of light that flies into another and lands with a ripple. Zero dependencies."
+    />
+    <meta name="color-scheme" content="dark" />
+    <link rel="stylesheet" href="./demo.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <span class="word">Landfall</span>
+        <span class="tag">swirl</span>
+      </div>
+      <a class="by" href="https://amudia.com" rel="noopener">by Amudia</a>
+    </header>
+
+    <main class="layout">
+      <section class="intro">
+        <h1>Hand an element off with a swirl of light.</h1>
+        <p>
+          The source charges up, dissolves into particles that swirl into a ball
+          of energy, and the ball flies into its target and lands with a ripple.
+          Zero dependencies, about 8 KB gzipped.
+        </p>
+        <div class="actions">
+          <button type="button" class="primary" id="send-one">Send one</button>
+          <button type="button" id="send-three">Send three</button>
+        </div>
+      </section>
+
+      <aside class="controls" aria-label="Effect options">
+        <fieldset>
+          <legend>Style</legend>
+          <div class="segmented" data-option="style">
+            <button type="button" data-value="plasma" aria-pressed="true">
+              Plasma
+            </button>
+            <button type="button" data-value="nova" aria-pressed="false">
+              Nova
+            </button>
+            <button type="button" data-value="orbit" aria-pressed="false">
+              Orbit
+            </button>
+            <button type="button" data-value="pulse" aria-pressed="false">
+              Pulse
+            </button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Source</legend>
+          <div class="segmented" data-option="mode">
+            <button type="button" data-value="move" aria-pressed="true">
+              Move
+            </button>
+            <button type="button" data-value="ghost" aria-pressed="false">
+              Ghost
+            </button>
+            <button type="button" data-value="none" aria-pressed="false">
+              Stay
+            </button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Colors</legend>
+          <div class="swatches" data-option="palette">
+            <button
+              type="button"
+              data-value="mix"
+              aria-pressed="true"
+              aria-label="Mix, a new color per item"
+              class="swatch mix"
+            ></button>
+            <button
+              type="button"
+              data-value="azure"
+              aria-pressed="false"
+              aria-label="Azure"
+              class="swatch"
+              style="--a: #1f7fe6; --b: #22c4ec"
+            ></button>
+            <button
+              type="button"
+              data-value="ember"
+              aria-pressed="false"
+              aria-label="Ember"
+              class="swatch"
+              style="--a: #ff8a3d; --b: #f2545b"
+            ></button>
+            <button
+              type="button"
+              data-value="aurora"
+              aria-pressed="false"
+              aria-label="Aurora"
+              class="swatch"
+              style="--a: #10b981; --b: #22c4ec"
+            ></button>
+            <button
+              type="button"
+              data-value="solar"
+              aria-pressed="false"
+              aria-label="Solar"
+              class="swatch"
+              style="--a: #ffb347; --b: #ff7a1a"
+            ></button>
+            <button
+              type="button"
+              data-value="iris"
+              aria-pressed="false"
+              aria-label="Iris"
+              class="swatch"
+              style="--a: #6f79f7; --b: #c150e5"
+            ></button>
+          </div>
+        </fieldset>
+
+        <label class="range">
+          <span>Duration <output id="duration-out">4.0 s</output></span>
+          <input
+            type="range"
+            id="duration"
+            min="1500"
+            max="8000"
+            step="250"
+            value="4000"
+          />
+        </label>
+
+        <label class="range">
+          <span>Swirl turns <output id="turns-out">2</output></span>
+          <input type="range" id="turns" min="0" max="6" step="0.5" value="2" />
+        </label>
+
+        <div class="toggles">
+          <label><input type="checkbox" id="charge" checked /> Charge</label>
+          <label><input type="checkbox" id="ripple" checked /> Ripple</label>
+          <label><input type="checkbox" id="reveal" checked /> Reveal</label>
+        </div>
+
+        <fieldset>
+          <legend>Reduced motion</legend>
+          <div class="segmented" data-option="reducedMotion">
+            <button type="button" data-value="user" aria-pressed="true">
+              System
+            </button>
+            <button type="button" data-value="always" aria-pressed="false">
+              Always
+            </button>
+            <button type="button" data-value="never" aria-pressed="false">
+              Never
+            </button>
+          </div>
+        </fieldset>
+
+        <pre
+          class="code"
+          aria-label="Code for these options"
+        ><code id="code"></code></pre>
+      </aside>
+
+      <section class="stage" aria-label="Demo">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Queue</h2>
+            <span class="hint" id="queue-hint">Press Send to start</span>
+          </div>
+          <ol class="queue" id="queue"></ol>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Gallery</h2>
+            <span class="hint">Items land here</span>
+          </div>
+          <ul class="gallery" id="gallery"></ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <span>
+        Landfall by <a href="https://amudia.com" rel="noopener">Amudia</a> ·
+        Apache-2.0
+      </span>
+    </footer>
+
+    <p class="sr-only" aria-live="polite" id="status"></p>
+    <script type="module" src="./demo.ts"></script>
+  </body>
+</html>
