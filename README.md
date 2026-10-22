@@ -9,7 +9,7 @@ Contents: [Install](#install) · [Usage](#usage) · [Options](#options) · [Reac
 ## Install
 
 ```bash
-bun add @amudia/landfall
+bun add @amudiahq/landfall
 ```
 
 npm, pnpm and yarn work too. Without a bundler, import `dist/landfall.min.js` from a CDN in a `<script type="module">`.
@@ -17,7 +17,7 @@ npm, pnpm and yarn work too. Without a bundler, import `dist/landfall.min.js` fr
 ## Usage
 
 ```ts
-import { swirl } from '@amudia/landfall';
+import { swirl } from '@amudiahq/landfall';
 
 const card = document.querySelector('.queue-card')!;
 const tile = document.querySelector('.gallery-tile')!;
@@ -62,7 +62,7 @@ If the target is off screen, the energy dives toward it and fades out. In that c
 
 ```tsx
 import { useRef } from 'react';
-import { useSwirl } from '@amudia/landfall/react';
+import { useSwirl } from '@amudiahq/landfall/react';
 
 export function Hand() {
   const card = useRef<HTMLDivElement>(null);
@@ -88,7 +88,7 @@ export function Hand() {
 ## Ripple only
 
 ```ts
-import { ripple } from '@amudia/landfall';
+import { ripple } from '@amudiahq/landfall';
 
 await ripple(tile, { reveal: tile.querySelector('img')! });
 ```

@@ -111,7 +111,7 @@ function renderCode() {
       : `reducedMotion: '${settings.reducedMotion}',`,
   ].filter(Boolean);
   code.textContent = [
-    `import { swirl } from '@amudia/landfall';`,
+    `import { swirl } from '@amudiahq/landfall';`,
     '',
     'await swirl(card, tile, {',
     ...lines.map((line) => `  ${line}`),
