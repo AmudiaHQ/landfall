@@ -9,10 +9,20 @@ Contents: [Install](#install) · [Usage](#usage) · [Options](#options) · [Reac
 ## Install
 
 ```bash
+npm install @amudiahq/landfall
+# or
+pnpm add @amudiahq/landfall
+yarn add @amudiahq/landfall
 bun add @amudiahq/landfall
 ```
 
-npm, pnpm and yarn work too. Without a bundler, import `dist/landfall.min.js` from a CDN in a `<script type="module">`.
+Without a bundler, import the minified ES module from a CDN:
+
+```html
+<script type="module">
+  import { swirl } from 'https://cdn.jsdelivr.net/npm/@amudiahq/landfall@0.1/dist/landfall.min.js';
+</script>
+```
 
 ## Usage
 

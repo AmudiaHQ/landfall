@@ -1,7 +1,6 @@
 {
   "name": "@amudiahq/landfall",
   "version": "0.1.0",
-  "private": true,
   "description": "A→B UI effects with zero dependencies. First up: swirl, which dissolves an element into a swirling energy ball that flies into another and lands with a ripple.",
   "keywords": [
     "animation",
@@ -56,7 +55,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "check": "prettier --check . && eslint . && tsc --noEmit"
+    "check": "prettier --check . && eslint . && tsc --noEmit",
+    "prepublishOnly": "bun run check && bun run build"
   },
   "peerDependencies": {
     "react": ">=17"
