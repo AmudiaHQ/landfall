@@ -127,6 +127,57 @@ export const isOnScreen = (rect: RectLike) =>
   rect.left + rect.width > 0 &&
   rect.left < window.innerWidth;
 
+/** Where an effect heads when it cannot land: just past the screen edge. */
+export function offScreenAim(rect: RectLike): Point {
+  const center = centerOf(rect);
+  return {
+    x: clamp(center.x, -40, window.innerWidth + 40),
+    y: clamp(center.y, -40, window.innerHeight + 40),
+  };
+}
+
+/** Where the line from the center of `rect` toward `toward` leaves the box. */
+export function edgePoint(rect: RectLike, toward: Point): Point {
+  const center = centerOf(rect);
+  const dx = toward.x - center.x;
+  const dy = toward.y - center.y;
+  const reach = Math.min(
+    dx ? rect.width / 2 / Math.abs(dx) : Infinity,
+    dy ? rect.height / 2 / Math.abs(dy) : Infinity,
+  );
+  // `toward` lies inside the box (or on its center): stay at the center.
+  if (!(reach < 1)) return center;
+  return { x: center.x + dx * reach, y: center.y + dy * reach };
+}
+
+/**
+ * A gentle arc from `a` to `b` as a function of progress. `bow` is the
+ * bulge as a share of the distance: positive rises (or bends right on a
+ * vertical line), negative bends the other way.
+ */
+export function arcPath(a: Point, b: Point, bow: number) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const length = Math.hypot(dx, dy) || 1;
+  let nx = dy / length;
+  let ny = -dx / length;
+  if (ny > 0 || (ny === 0 && nx < 0)) {
+    nx = -nx;
+    ny = -ny;
+  }
+  // A quadratic curve bulges half as far as its control point.
+  const cx = a.x + dx / 2 + nx * bow * length * 2;
+  const cy = a.y + dy / 2 + ny * bow * length * 2;
+  return (u: number): Point => ({
+    x: (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * cx + u * u * b.x,
+    y: (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * cy + u * u * b.y,
+  });
+}
+
+/** How much to scale a natural run time so it fits `duration`. */
+export const fitScale = (natural: number, duration: number | undefined) =>
+  duration && duration > 0 ? clamp(duration / natural, 0.2, 5) : 1;
+
 export const SWIRL_STYLES: readonly SwirlStyle[] = [
   'plasma',
   'nova',
@@ -154,6 +205,8 @@ export type Palette = {
   to: string;
   /** `r, g, b` of the glow, ready for `rgba(…, alpha)`. */
   glow: string;
+  /** `r, g, b` of `to`, ready for `rgba(…, alpha)`. */
+  tint: string;
 };
 
 const DEFAULT_COLORS = { from: '#1f7fe6', to: '#22c4ec' };
@@ -183,6 +236,7 @@ export function toPalette(colors: Colors = {}): Palette {
     from,
     to,
     glow: rgbOf(colors.glow ?? from) ?? rgbOf(from) ?? '31, 127, 230',
+    tint: rgbOf(to) ?? '34, 196, 236',
   };
 }
 
@@ -279,4 +333,23 @@ export function createScope(signal?: AbortSignal) {
       handlers.clear();
     },
   };
+}
+
+/**
+ * Runs an effect in its own abort scope: nothing on the server, nothing if
+ * already aborted, and `onComplete` only when it was not aborted.
+ */
+export async function runEffect(
+  options: { signal?: AbortSignal; onComplete?: () => void },
+  body: (scope: Scope) => Promise<void>,
+): Promise<void> {
+  if (typeof window === 'undefined') return;
+  const scope = createScope(options.signal);
+  if (scope.aborted) return;
+  try {
+    await body(scope);
+  } finally {
+    scope.dispose();
+  }
+  if (!scope.aborted) options.onComplete?.();
 }

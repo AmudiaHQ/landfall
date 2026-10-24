@@ -327,3 +327,216 @@ export function showLayer(layer: HTMLElement) {
   layer.style.removeProperty('mask-image');
   layer.style.opacity = '1';
 }
+
+/* ---------------------------------------------------------------------- */
+/* Shared pieces                                                          */
+/* ---------------------------------------------------------------------- */
+
+/** A click-through canvas over the whole viewport, gone on abort. */
+export const createStage = (zIndex: number, scope: Scope) =>
+  createCanvas(
+    { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight },
+    zIndex,
+    scope,
+  );
+
+/** A click-through copy of `source`, fixed exactly over it. */
+export function makeGhost(source: HTMLElement, zIndex: number) {
+  const rect = source.getBoundingClientRect();
+  const ghost = source.cloneNode(true) as HTMLElement;
+  for (const node of [ghost, ...Array.from(ghost.querySelectorAll('[id]'))]) {
+    node.removeAttribute('id');
+  }
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.setAttribute('inert', '');
+  Object.assign(ghost.style, {
+    position: 'fixed',
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    margin: '0',
+    boxSizing: 'border-box',
+    transform: 'none',
+    transition: 'none',
+    visibility: 'visible',
+    pointerEvents: 'none',
+    zIndex: String(zIndex - 1),
+  });
+  // Next to the source, so it keeps the source's inherited styles.
+  source.after(ghost);
+  // A transformed ancestor shifts fixed boxes: measure, then correct.
+  const placed = ghost.getBoundingClientRect();
+  ghost.style.left = `${2 * rect.left - placed.left}px`;
+  ghost.style.top = `${2 * rect.top - placed.top}px`;
+  return ghost;
+}
+
+/**
+ * Hides `element` without touching its styles until the returned function
+ * runs or the scope aborts.
+ */
+export function holdHidden(element: HTMLElement, scope: Scope) {
+  if (typeof element.animate !== 'function') return () => undefined;
+  const animation = element.animate([{ opacity: 0 }, { opacity: 0 }], {
+    duration: 1,
+    fill: 'forwards',
+  });
+  const show = () => animation.cancel();
+  const off = scope.onAbort(show);
+  return () => {
+    off();
+    show();
+  };
+}
+
+/** A small scale bump that adds to the element's own transform. */
+export function bump(element: HTMLElement, duration: number, scope: Scope) {
+  scope.animate(
+    element,
+    [
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.025)', offset: 0.25 },
+      { transform: 'scale(1)' },
+    ],
+    {
+      duration,
+      easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
+      composite: 'add',
+    },
+  );
+}
+
+/** A soft burst of light with a white heart and no edge. */
+export function glow(
+  context: Context,
+  at: Point,
+  radius: number,
+  alpha: number,
+  palette: Palette,
+) {
+  if (radius <= 0.5 || alpha <= 0) return;
+  const gradient = context.createRadialGradient(
+    at.x,
+    at.y,
+    0,
+    at.x,
+    at.y,
+    radius,
+  );
+  gradient.addColorStop(0, `rgba(255, 255, 255, ${0.9 * alpha})`);
+  gradient.addColorStop(0.25, `rgba(${palette.glow}, ${0.5 * alpha})`);
+  gradient.addColorStop(1, `rgba(${palette.glow}, 0)`);
+  context.fillStyle = gradient;
+  dot(context, at.x, at.y, radius);
+}
+
+/** Reduced motion: a soft glow over `rect` that fades in and out. */
+export async function glowFade(
+  rect: RectLike,
+  palette: Palette,
+  zIndex: number,
+  scope: Scope,
+) {
+  if (rect.width <= 0 || rect.height <= 0) return;
+  const pad = 24;
+  const box = {
+    left: rect.left - pad,
+    top: rect.top - pad,
+    width: rect.width + pad * 2,
+    height: rect.height + pad * 2,
+  };
+  const host = createCanvas(box, zIndex, scope);
+  if (host.context) {
+    host.clear();
+    host.context.globalCompositeOperation = 'lighter';
+    glow(
+      host.context,
+      { x: box.width / 2, y: box.height / 2 },
+      Math.max(box.width, box.height) / 2,
+      0.45,
+      palette,
+    );
+  }
+  await scope.animate(
+    host.canvas,
+    [{ opacity: 0 }, { opacity: 1 }, { opacity: 0 }],
+    {
+      duration: 360,
+      easing: 'ease-in-out',
+      fill: 'forwards',
+    },
+  ).done;
+  host.remove();
+}
+
+export type Spark = {
+  x: number;
+  y: number;
+  /** Velocity in px per ms. */
+  vx: number;
+  vy: number;
+  age: number;
+  life: number;
+  size: number;
+  color: string;
+};
+
+/** Flings `count` sparks out from `at` in every direction. */
+export function burstSparks(
+  sparks: Spark[],
+  at: Point,
+  count: number,
+  speed: number,
+  life: number,
+  colors: string[],
+) {
+  for (let i = 0; i < count; i += 1) {
+    const angle = (i / count) * TAU + Math.random() * 0.6;
+    const velocity = speed * (0.45 + Math.random() * 0.55);
+    sparks.push({
+      x: at.x,
+      y: at.y,
+      vx: Math.cos(angle) * velocity,
+      vy: Math.sin(angle) * velocity,
+      age: 0,
+      life: life * (0.55 + Math.random() * 0.45),
+      size: 0.8 + Math.random() * 1.2,
+      color: colors[i % colors.length],
+    });
+  }
+}
+
+/** Moves, slows and draws sparks as short streaks; drops the spent ones. */
+export function drawSparks(
+  context: Context,
+  sparks: Spark[],
+  delta: number,
+  fall = 0.0004,
+) {
+  context.save();
+  context.globalCompositeOperation = 'lighter';
+  context.lineCap = 'round';
+  const drag = 0.996 ** delta;
+  for (let i = sparks.length - 1; i >= 0; i -= 1) {
+    const spark = sparks[i];
+    spark.age += delta;
+    if (spark.age >= spark.life) {
+      sparks.splice(i, 1);
+      continue;
+    }
+    spark.vx *= drag;
+    spark.vy = spark.vy * drag + fall * delta;
+    spark.x += spark.vx * delta;
+    spark.y += spark.vy * delta;
+    const left = 1 - spark.age / spark.life;
+    context.globalAlpha = clamp(left, 0, 1);
+    context.strokeStyle = spark.color;
+    context.lineWidth = spark.size * (0.4 + 0.6 * left);
+    context.beginPath();
+    context.moveTo(spark.x - spark.vx * 18, spark.y - spark.vy * 18);
+    context.lineTo(spark.x, spark.y);
+    context.stroke();
+  }
+  context.restore();
+}

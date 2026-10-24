@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Landfall · swirl demo</title>
+    <title>Landfall · A→B effects demo</title>
     <meta
       name="description"
-      content="Landfall swirl: an element dissolves into a swirling ball of light that flies into another and lands with a ripple. Zero dependencies."
+      content="Landfall: A→B UI effects with zero dependencies. Swirl, comet, beam and portal hand one element off to another."
     />
     <meta name="color-scheme" content="dark" />
     <link rel="stylesheet" href="./demo.css" />
@@ -16,19 +16,39 @@
       <div class="brand">
         <span class="mark" aria-hidden="true"></span>
         <span class="word">Landfall</span>
-        <span class="tag">swirl</span>
+        <span class="tag" id="effect-tag">swirl</span>
       </div>
       <a class="by" href="https://amudia.com" rel="noopener">by Amudia</a>
     </header>
 
     <main class="layout">
       <section class="intro">
-        <h1>Hand an element off with a swirl of light.</h1>
+        <h1>Hand an element off from A to B.</h1>
         <p>
-          The source charges up, dissolves into particles that swirl into a ball
-          of energy, and the ball flies into its target and lands with a ripple.
-          Zero dependencies, about 8 KB gzipped.
+          <span id="blurb">
+            The source charges up, dissolves into particles that swirl into a
+            ball of energy, and the ball flies into its target and lands with a
+            ripple.
+          </span>
+          Four effects, zero dependencies, about 12 KB gzipped.
         </p>
+        <fieldset class="effects">
+          <legend>Effect</legend>
+          <div class="segmented" data-option="effect">
+            <button type="button" data-value="swirl" aria-pressed="true">
+              Swirl
+            </button>
+            <button type="button" data-value="comet" aria-pressed="false">
+              Comet
+            </button>
+            <button type="button" data-value="beam" aria-pressed="false">
+              Beam
+            </button>
+            <button type="button" data-value="portal" aria-pressed="false">
+              Portal
+            </button>
+          </div>
+        </fieldset>
         <div class="actions">
           <button type="button" class="primary" id="send-one">Send one</button>
           <button type="button" id="send-three">Send three</button>
@@ -36,7 +56,7 @@
       </section>
 
       <aside class="controls" aria-label="Effect options">
-        <fieldset>
+        <fieldset data-effects="swirl">
           <legend>Style</legend>
           <div class="segmented" data-option="style">
             <button type="button" data-value="plasma" aria-pressed="true">
@@ -54,7 +74,7 @@
           </div>
         </fieldset>
 
-        <fieldset>
+        <fieldset data-effects="swirl portal">
           <legend>Source</legend>
           <div class="segmented" data-option="mode">
             <button type="button" data-value="move" aria-pressed="true">
@@ -63,7 +83,12 @@
             <button type="button" data-value="ghost" aria-pressed="false">
               Ghost
             </button>
-            <button type="button" data-value="none" aria-pressed="false">
+            <button
+              type="button"
+              data-value="none"
+              data-effects="swirl"
+              aria-pressed="false"
+            >
               Stay
             </button>
           </div>
@@ -134,15 +159,58 @@
           />
         </label>
 
-        <label class="range">
+        <label class="range" data-effects="swirl">
           <span>Swirl turns <output id="turns-out">2</output></span>
           <input type="range" id="turns" min="0" max="6" step="0.5" value="2" />
         </label>
 
-        <div class="toggles">
-          <label><input type="checkbox" id="charge" checked /> Charge</label>
-          <label><input type="checkbox" id="ripple" checked /> Ripple</label>
-          <label><input type="checkbox" id="reveal" checked /> Reveal</label>
+        <label class="range" data-effects="comet">
+          <span>Arc <output id="arc-out">0.2</output></span>
+          <input
+            type="range"
+            id="arc"
+            min="-0.5"
+            max="0.5"
+            step="0.05"
+            value="0.2"
+          />
+        </label>
+
+        <label class="range" data-effects="comet">
+          <span>Tail <output id="tail-out">160 px</output></span>
+          <input
+            type="range"
+            id="tail"
+            min="40"
+            max="320"
+            step="20"
+            value="160"
+          />
+        </label>
+
+        <label class="range" data-effects="beam">
+          <span>Pulses <output id="pulses-out">1</output></span>
+          <input type="range" id="pulses" min="1" max="4" step="1" value="1" />
+        </label>
+
+        <label class="range" data-effects="portal">
+          <span>Spin turns <output id="spin-out">1</output></span>
+          <input type="range" id="spin" min="0" max="3" step="0.25" value="1" />
+        </label>
+
+        <div class="toggles" data-effects="swirl beam">
+          <label data-effects="swirl">
+            <input type="checkbox" id="charge" checked /> Charge
+          </label>
+          <label data-effects="swirl">
+            <input type="checkbox" id="ripple" checked /> Ripple
+          </label>
+          <label data-effects="swirl">
+            <input type="checkbox" id="reveal" checked /> Reveal
+          </label>
+          <label data-effects="beam">
+            <input type="checkbox" id="flash" checked /> Flash
+          </label>
         </div>
 
         <fieldset>

@@ -1,5 +1,7 @@
-// Serves the demo page with live TypeScript bundling. Port 3050 is this
-// project's port in D:\_Me\projects\ports.txt.
+// Copyright 2026 Amudia (https://amudia.com)
+// SPDX-License-Identifier: Apache-2.0
+
+// Serves the demo page with live TypeScript bundling.
 import page from '../demo/index.html';
 
 const server = Bun.serve({

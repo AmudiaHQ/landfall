@@ -7,6 +7,7 @@ import {
   dot,
   drawBall,
   drawTail,
+  makeGhost,
   sampleMotes,
   showLayer,
 } from './draw';
@@ -39,6 +40,7 @@ import {
   isElement,
   isOnScreen,
   landingPoint,
+  offScreenAim,
   prefersReduced,
   rectOf,
   targetReader,
@@ -189,38 +191,6 @@ async function chargeUp(
   }).done;
 }
 
-/** A click-through copy of `source`, fixed exactly over it. */
-function makeGhost(source: HTMLElement, zIndex: number) {
-  const rect = source.getBoundingClientRect();
-  const ghost = source.cloneNode(true) as HTMLElement;
-  for (const node of [ghost, ...Array.from(ghost.querySelectorAll('[id]'))]) {
-    node.removeAttribute('id');
-  }
-  ghost.setAttribute('aria-hidden', 'true');
-  ghost.setAttribute('inert', '');
-  Object.assign(ghost.style, {
-    position: 'fixed',
-    left: `${rect.left}px`,
-    top: `${rect.top}px`,
-    width: `${rect.width}px`,
-    height: `${rect.height}px`,
-    margin: '0',
-    boxSizing: 'border-box',
-    transform: 'none',
-    transition: 'none',
-    visibility: 'visible',
-    pointerEvents: 'none',
-    zIndex: String(zIndex - 1),
-  });
-  // Next to the source, so it keeps the source's inherited styles.
-  source.after(ghost);
-  // A transformed ancestor shifts fixed boxes: measure, then correct.
-  const placed = ghost.getBoundingClientRect();
-  ghost.style.left = `${2 * rect.left - placed.left}px`;
-  ghost.style.top = `${2 * rect.top - placed.top}px`;
-  return ghost;
-}
-
 /**
  * No shrinking box: the source (or its ghost) fades and blurs away, leaving
  * its particles. A moved source stays hidden for good.
@@ -301,15 +271,6 @@ type Flight = {
   /** `landed` is false when the target was off screen or gone. */
   onImpact: (point: Point, landed: boolean) => void;
 };
-
-/** Where the energy heads when it cannot land: just past the screen edge. */
-function offScreenAim(rect: RectLike): Point {
-  const center = centerOf(rect);
-  return {
-    x: clamp(center.x, -40, window.innerWidth + 40),
-    y: clamp(center.y, -40, window.innerHeight + 40),
-  };
-}
 
 /**
  * Gathers the particles of `region` into a ball at `from`, then flies it to

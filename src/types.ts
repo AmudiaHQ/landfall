@@ -90,6 +90,70 @@ export type SwirlOptions = {
   onComplete?: () => void;
 };
 
+/** Options every effect takes. */
+export type EffectOptions = {
+  colors?: Colors;
+  /** Total run time in ms; every phase scales to fit. */
+  duration?: number;
+  /** Progress curve of the main motion. Default depends on the effect. */
+  easing?: Easing;
+  /** Default `user`. Reduced motion swaps the effect for short fades. */
+  reducedMotion?: ReducedMotion;
+  /** Stacking order of the overlay. Default 9999. */
+  zIndex?: number;
+  /** Aborting removes the overlay at once and jumps to the end state. */
+  signal?: AbortSignal;
+  /** The effect reaches the target, at this viewport point. */
+  onImpact?: (point: Point) => void;
+  /** Everything has finished (not called after an abort). */
+  onComplete?: () => void;
+};
+
+/** Any A→B effect: `swirl`, `comet`, `beam`, `portal`. */
+export type Effect<Options extends { signal?: AbortSignal }> = (
+  from: Source,
+  to: Target,
+  options?: Options,
+) => Promise<void>;
+
+export type CometOptions = EffectOptions & {
+  /**
+   * How far the path bows, as a share of the distance. Positive arcs
+   * upward, negative the other way, 0 is straight. Default 0.2.
+   */
+  arc?: number;
+  /** Length of the tail in px. Default 160. */
+  tail?: number;
+  /** Sparks in the landing burst; 0 for none. Default 18. */
+  sparks?: number;
+};
+
+export type BeamOptions = EffectOptions & {
+  /** Width of the beam's bright core in px. Default 2. */
+  width?: number;
+  /** Pulses of light that travel along the beam, 1 to 8. Default 1. */
+  pulses?: number;
+  /** How far the beam bows, as a share of the distance. Default 0. */
+  arc?: number;
+  /** The target flashes as each pulse arrives. Default true. */
+  flash?: boolean;
+};
+
+/**
+ * - `move`: the source passes through the ring and stays hidden afterwards.
+ * - `ghost`: a copy passes through; the source stays.
+ */
+export type PortalMode = 'move' | 'ghost';
+
+export type PortalOptions = EffectOptions & {
+  /** What happens to the source. Default `move`. */
+  mode?: PortalMode;
+  /** Turns each element spins as it passes through a ring. Default 1. */
+  turns?: number;
+  /** The source has passed through its ring (`move` mode). */
+  onCollapse?: () => void;
+};
+
 export type RippleOptions = Pick<
   SwirlOptions,
   | 'style'

@@ -1,7 +1,7 @@
 {
   "name": "@amudiahq/landfall",
   "version": "0.1.0",
-  "description": "A→B UI effects with zero dependencies. First up: swirl, which dissolves an element into a swirling energy ball that flies into another and lands with a ripple.",
+  "description": "A→B UI effects with zero dependencies: swirl, comet, beam and portal hand one element off to another with light.",
   "keywords": [
     "animation",
     "transition",
@@ -10,6 +10,9 @@
     "canvas",
     "waapi",
     "swirl",
+    "comet",
+    "beam",
+    "portal",
     "fly-to",
     "handoff",
     "react"

@@ -1,6 +1,10 @@
+// Copyright 2026 Amudia (https://amudia.com)
+// SPDX-License-Identifier: Apache-2.0
+
 // Builds the ESM package into dist/: readable modules for bundlers, one
 // minified file for a <script type="module"> tag, and type declarations.
-import { rm } from 'node:fs/promises';
+import { readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 import pkg from '../package.json';
 
@@ -49,5 +53,13 @@ const types = Bun.spawnSync(['bunx', 'tsc', '-p', 'tsconfig.build.json'], {
   stderr: 'inherit',
 });
 if (types.exitCode !== 0) process.exit(types.exitCode ?? 1);
+
+// tsc drops comments, so stamp the banner on the declarations too.
+for (const name of await readdir('dist', { recursive: true })) {
+  if (!name.endsWith('.d.ts')) continue;
+  const file = join('dist', name);
+  const text = await readFile(file, 'utf8');
+  if (!text.startsWith('/*!')) await writeFile(file, `${banner}\n${text}`);
+}
 
 console.log('Built dist/ (ESM, minified bundle, types).');

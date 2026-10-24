@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
+  beam,
+  comet,
+  portal,
   swirl,
   type Colors,
   type ReducedMotion,
@@ -18,6 +21,30 @@ const PALETTES = {
 } as const;
 type PaletteName = keyof typeof PALETTES;
 
+const EFFECTS = {
+  swirl: {
+    blurb:
+      'The source charges up, dissolves into particles that swirl into a ball of energy, and the ball flies into its target and lands with a ripple.',
+    duration: { min: 1500, max: 8000, step: 250, value: 4000 },
+  },
+  comet: {
+    blurb:
+      'A bright head with a long glowing tail arcs from the source to its target and lands in a small burst of sparks. The source stays.',
+    duration: { min: 600, max: 4000, step: 100, value: 1600 },
+  },
+  beam: {
+    blurb:
+      'A thin beam of light draws from the source to its target. A pulse runs along it, the target flashes, and the beam fades.',
+    duration: { min: 600, max: 4000, step: 100, value: 1300 },
+  },
+  portal: {
+    blurb:
+      'The source spins into a glowing ring that closes. A ring opens over the target, and the target grows out of it.',
+    duration: { min: 800, max: 5000, step: 100, value: 1900 },
+  },
+} as const;
+type EffectName = keyof typeof EFFECTS;
+
 const TITLES = [
   'Aurora study',
   'Tidal glass',
@@ -32,14 +59,25 @@ const TITLES = [
 ];
 
 const settings = {
+  effect: 'swirl' as EffectName,
   style: 'plasma' as SwirlStyle,
   mode: 'move' as SwirlMode,
   palette: 'mix' as PaletteName | 'mix',
-  duration: 4000,
+  durations: {
+    swirl: EFFECTS.swirl.duration.value,
+    comet: EFFECTS.comet.duration.value,
+    beam: EFFECTS.beam.duration.value,
+    portal: EFFECTS.portal.duration.value,
+  } as Record<EffectName, number>,
   turns: 2,
+  arc: 0.2,
+  tail: 160,
+  pulses: 1,
+  spin: 1,
   charge: true,
   ripple: true,
   reveal: true,
+  flash: true,
   reducedMotion: 'user' as ReducedMotion,
 };
 
@@ -55,36 +93,57 @@ const wait = (ms: number) =>
 
 /* Controls ------------------------------------------------------------ */
 
+function press(group: Element, value: string) {
+  for (const button of group.querySelectorAll<HTMLButtonElement>(
+    'button[data-value]',
+  )) {
+    button.setAttribute('aria-pressed', String(button.dataset.value === value));
+  }
+}
+
 for (const group of document.querySelectorAll<HTMLElement>('[data-option]')) {
   group.addEventListener('click', (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
       'button[data-value]',
     );
     if (!button) return;
-    for (const other of group.querySelectorAll('button')) {
-      other.setAttribute('aria-pressed', String(other === button));
-    }
+    press(group, button.dataset.value!);
     Object.assign(settings, { [group.dataset.option!]: button.dataset.value });
+    if (group.dataset.option === 'effect') applyEffect();
     renderCode();
   });
 }
 
 const duration = byId<HTMLInputElement>('duration');
+const durationOut = byId('duration-out');
+const showDuration = () => {
+  durationOut.textContent = `${(settings.durations[settings.effect] / 1000).toFixed(1)} s`;
+};
 duration.addEventListener('input', () => {
-  settings.duration = Number(duration.value);
-  byId('duration-out').textContent =
-    `${(settings.duration / 1000).toFixed(1)} s`;
+  settings.durations[settings.effect] = Number(duration.value);
+  showDuration();
   renderCode();
 });
 
-const turns = byId<HTMLInputElement>('turns');
-turns.addEventListener('input', () => {
-  settings.turns = Number(turns.value);
-  byId('turns-out').textContent = String(settings.turns);
-  renderCode();
-});
+/** A range input bound to a numeric setting, shown with `format`. */
+function bindRange(
+  name: 'turns' | 'arc' | 'tail' | 'pulses' | 'spin',
+  format: (value: number) => string = String,
+) {
+  const input = byId<HTMLInputElement>(name);
+  input.addEventListener('input', () => {
+    settings[name] = Number(input.value);
+    byId(`${name}-out`).textContent = format(settings[name]);
+    renderCode();
+  });
+}
+bindRange('turns');
+bindRange('arc');
+bindRange('tail', (value) => `${value} px`);
+bindRange('pulses');
+bindRange('spin');
 
-for (const name of ['charge', 'ripple', 'reveal'] as const) {
+for (const name of ['charge', 'ripple', 'reveal', 'flash'] as const) {
   const box = byId<HTMLInputElement>(name);
   box.addEventListener('change', () => {
     settings[name] = box.checked;
@@ -92,28 +151,63 @@ for (const name of ['charge', 'ripple', 'reveal'] as const) {
   });
 }
 
+/** Shows only the controls that apply to the chosen effect. */
+function applyEffect() {
+  const effect = settings.effect;
+  for (const element of document.querySelectorAll<HTMLElement>(
+    '[data-effects]',
+  )) {
+    element.hidden = !element.dataset.effects!.split(' ').includes(effect);
+  }
+  // Portal has no "stay" mode.
+  if (effect === 'portal' && settings.mode === 'none') {
+    settings.mode = 'move';
+    press(document.querySelector('[data-option="mode"]')!, 'move');
+  }
+  const range = EFFECTS[effect].duration;
+  duration.min = String(range.min);
+  duration.max = String(range.max);
+  duration.step = String(range.step);
+  duration.value = String(settings.durations[effect]);
+  showDuration();
+  byId('effect-tag').textContent = effect;
+  byId('blurb').textContent = EFFECTS[effect].blurb;
+}
+
 function renderCode() {
+  const effect = settings.effect;
   const colors =
     settings.palette === 'mix'
       ? `{ from: '#1f7fe6', to: '#22c4ec' }, // a new pair per item`
       : `{ from: '${PALETTES[settings.palette].from}', to: '${PALETTES[settings.palette].to}' },`;
+  const own: Record<EffectName, string[]> = {
+    swirl: [
+      `style: '${settings.style}',`,
+      `mode: '${settings.mode}',`,
+      `turns: ${settings.turns},`,
+      settings.charge ? '' : 'charge: false,',
+      settings.ripple ? '' : 'ripple: false,',
+      settings.reveal ? `reveal: tile.querySelector('.art'),` : '',
+    ],
+    comet: [`arc: ${settings.arc},`, `tail: ${settings.tail},`],
+    beam: [
+      `pulses: ${settings.pulses},`,
+      settings.flash ? '' : 'flash: false,',
+    ],
+    portal: [`mode: '${settings.mode}',`, `turns: ${settings.spin},`],
+  };
   const lines = [
-    `style: '${settings.style}',`,
-    `mode: '${settings.mode}',`,
-    `duration: ${settings.duration},`,
-    `turns: ${settings.turns},`,
+    ...own[effect],
+    `duration: ${settings.durations[effect]},`,
     `colors: ${colors}`,
-    settings.charge ? '' : 'charge: false,',
-    settings.ripple ? '' : 'ripple: false,',
-    settings.reveal ? `reveal: tile.querySelector('.art'),` : '',
     settings.reducedMotion === 'user'
       ? ''
       : `reducedMotion: '${settings.reducedMotion}',`,
   ].filter(Boolean);
   code.textContent = [
-    `import { swirl } from '@amudiahq/landfall';`,
+    `import { ${effect} } from '@amudiahq/landfall';`,
     '',
-    'await swirl(card, tile, {',
+    `await ${effect}(card, tile, {`,
     ...lines.map((line) => `  ${line}`),
     '});',
   ].join('\n');
@@ -178,7 +272,7 @@ function createTile(title: string) {
   const art = document.createElement('div');
   art.className = 'tile-art art';
   art.style.background = makeArt();
-  // Hidden until the energy lands.
+  // Hidden until the effect lands.
   art.style.opacity = '0';
   const caption = document.createElement('figcaption');
   caption.textContent = title;
@@ -235,6 +329,67 @@ function updateHint() {
       : 'Press Send to start';
 }
 
+/** Runs the chosen effect from a job card to its tile. */
+function launch(
+  effect: EffectName,
+  job: HTMLElement,
+  tile: HTMLElement,
+  art: HTMLElement,
+  colors: Colors,
+) {
+  const target = () => (tile.isConnected ? tile : null);
+  const shared = {
+    colors,
+    duration: settings.durations[effect],
+    reducedMotion: settings.reducedMotion,
+    onImpact: () => {
+      tile.dataset.state = 'landed';
+      art.style.opacity = '1';
+      // Comet and beam leave the tile in place: fade its art in.
+      if (effect === 'comet' || effect === 'beam') {
+        art.animate([{ opacity: 0 }, { opacity: 1 }], {
+          duration: 350,
+          easing: 'ease-out',
+        });
+      }
+    },
+  };
+  const onCollapse = () => removeJob(job);
+
+  if (effect === 'comet') {
+    return comet(job, target, {
+      ...shared,
+      arc: settings.arc,
+      tail: settings.tail,
+    });
+  }
+  if (effect === 'beam') {
+    return beam(job, target, {
+      ...shared,
+      pulses: settings.pulses,
+      flash: settings.flash,
+    });
+  }
+  if (effect === 'portal') {
+    return portal(job, target, {
+      ...shared,
+      mode: settings.mode === 'ghost' ? 'ghost' : 'move',
+      turns: settings.spin,
+      onCollapse,
+    });
+  }
+  return swirl(job, target, {
+    ...shared,
+    style: settings.style,
+    mode: settings.mode,
+    turns: settings.turns,
+    charge: settings.charge,
+    ripple: settings.ripple,
+    reveal: settings.reveal ? art : false,
+    onCollapse,
+  });
+}
+
 async function send(delay = 0) {
   await wait(delay);
   const title = TITLES[sent % TITLES.length];
@@ -248,29 +403,17 @@ async function send(delay = 0) {
   await progress(job, 1300 + Math.random() * 700);
   job.dataset.state = 'done';
   job.querySelector('.job-text span')!.textContent = 'Done';
-  const mode = settings.mode;
+  const effect = settings.effect;
+  // Only swirl and portal can move the card itself.
+  const moved =
+    (effect === 'swirl' || effect === 'portal') && settings.mode === 'move';
 
-  await swirl(job, () => (tile.isConnected ? tile : null), {
-    style: settings.style,
-    mode,
-    duration: settings.duration,
-    turns: settings.turns,
-    colors,
-    charge: settings.charge,
-    ripple: settings.ripple,
-    reveal: settings.reveal ? art : false,
-    reducedMotion: settings.reducedMotion,
-    onCollapse: () => removeJob(job),
-    onImpact: () => {
-      tile.dataset.state = 'landed';
-      art.style.opacity = '1';
-    },
-  });
+  await launch(effect, job, tile, art, colors);
 
   running -= 1;
   updateHint();
   status.textContent = `${title} landed`;
-  if (mode === 'move') {
+  if (moved) {
     removeJob(job);
     return;
   }
@@ -292,4 +435,5 @@ byId('send-three').addEventListener('click', () => {
   void send(700);
 });
 
+applyEffect();
 renderCode();
